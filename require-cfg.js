@@ -55,7 +55,7 @@ class GruntConfigurationResolver {
       this.out.actionException(msg, error, true);
     }
 
-    this.out.action(msg);
+    this.out.action(msg + ' as ' + value);
     return value;
   }
 

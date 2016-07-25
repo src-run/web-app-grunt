@@ -84,7 +84,12 @@ module.exports = function (grunt) {
 
     concat: {
       script: {
-        src : c.getFiles('jquery.in.script').concat(c.getFiles('plug-bs.in.script').concat(c.getFiles('plug-waypoints.in.script').concat(c.getFiles('app.in.script')))),
+        src : [
+            c.getFiles('jquery.in.script'),
+            c.getFiles('plug-bs.in.script'),
+            c.getFiles('plug-waypoints.in.script'),
+            c.getFiles('app.in.script')
+        ],
         dest: c.getPath('app.to.script', { post: 'app.js' })
       }
     },
@@ -104,7 +109,7 @@ module.exports = function (grunt) {
 
     sass: {
       options: {
-        includePaths: [c.getPath('app.in.style'), c.getPath('plug-bs.in.style')],
+        includePaths: [c.getPath('app.in.style'), c.getPath('plug-bs.in.style'), c.getPath('plug-fa.in.style')],
         precision   : 9,
         sourceMap   : true,
         outFile     : c.getPath('app.to.style', { post: 'app.css.map' })
@@ -200,7 +205,7 @@ module.exports = function (grunt) {
   grunt.registerTask('compile-script', [
     'concat',
     'uglify',
-    'commonjs',
+    //'commonjs',
     'usebanner:script'
   ]);
 
@@ -228,9 +233,9 @@ module.exports = function (grunt) {
     'compile'
   ]);
 
-  grunt.registerTask('commonjs', 'Generate CommonJS entry module file', function () {
-    return r.get('cjs').write(grunt.config.get('concat.script.src'), c.getPath('app.to.script', { post: 'npm.js' }));
-  });
+  //grunt.registerTask('commonjs', 'Generate CommonJS entry module file', function () {
+  //  return r.get('cjs').write(grunt.config.get('concat.script.src'), c.getPath('app.to.script', { post: 'npm.js' }));
+  //});
 };
 
 /* EOF */
