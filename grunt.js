@@ -109,7 +109,7 @@ module.exports = function (grunt) {
 
     sass: {
       options: {
-        includePaths: [c.getPath('app.in.style'), c.getPath('plug-bs.in.style'), c.getPath('plug-fa.in.style')],
+        includePaths: [c.getPath('app.in.style'), c.getPath('plug.root')],
         precision   : 9,
         sourceMap   : true,
         outFile     : c.getPath('app.to.style', { post: 'app.css.map' })
