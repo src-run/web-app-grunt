@@ -12,7 +12,10 @@ module.exports = function (grunt) {
   'use strict';
 
   var r = new (require('./require.js'))(grunt);
-  var c = r.get('cfg');
+  var c = r.configsManagerYAML();
+  var s = r.systemIntrospector();
+
+  s.getSystemEnvironment();
 
   grunt.util.linefeed = '\n';
 
@@ -28,22 +31,25 @@ module.exports = function (grunt) {
 
     jshint: {
       options: {
-        jshintrc: c.getPath('app.to.script', { post: '.jshintrc' })
+        globals: {
+          jQuery: true
+        },
+        jshintrc: c.getPath('app.in.script', { post: '.jshintrc' })
       },
       grunt: {
         options: {
-          jshintrc: c.getPath('app.to.script', { post: '.jshintrc' })
+          jshintrc: c.getPath('app.in.script', { post: '.jshintrc' })
         },
         src: ['Gruntfile.js', 'package.js', 'grunt/*.js']
       },
       script: {
-        src: c.getPath('app.to.script', { post: '*.js' })
+        src: c.getFilesMerged(['app.in.script'])
       }
     },
 
     jscs: {
       options: {
-        config: c.getPath('app.to.script', { post: '.jscsrc' })
+        config: c.getPath('app.in.script', { post: '.jscsrc' })
       },
       grunt: {
         src: '<%= jshint.grunt.src %>'
@@ -83,13 +89,11 @@ module.exports = function (grunt) {
     },
 
     concat: {
+      options: {
+        separator: ';'
+      },
       script: {
-        src : [
-            c.getFiles('jquery.in.script'),
-            c.getFiles('plug-bs.in.script'),
-            c.getFiles('plug-waypoints.in.script'),
-            c.getFiles('app.in.script')
-        ],
+        src : c.getFilesMerged(['jquery.in.script', 'plug-bs.in.script', 'plug-bs.in.script', 'plug-waypoints.in.script', 'app.in.script']),
         dest: c.getPath('app.to.script', { post: 'app.js' })
       }
     },
@@ -104,6 +108,18 @@ module.exports = function (grunt) {
       script: {
         src : '<%= concat.script.dest %>',
         dest: c.getPath('app.to.script', { post: 'app.min.js' })
+      }
+    },
+
+    closurecompiler: {
+      script: {
+        options: { // jscs:disable
+          closure_compilation_level: 'ADVANCED',
+          closure_language_in      : 'ECMASCRIPT6_STRICT',
+          closure_language_out     : 'ECMASCRIPT5_STRICT'
+        }, // jscs:enable
+        dest: c.getPath('app.to.script', { post: 'app.min.js' }),
+        src : ['<%= concat.script.dest %>']
       }
     },
 
@@ -172,7 +188,7 @@ module.exports = function (grunt) {
 
     watch: {
       script: {
-        files: c.getPath('app.to.script', { post: '**/*.js' }),
+        files: c.getFilesMerged(['jquery.in.script', 'plug-bs.in.script', 'plug-bs.in.script', 'plug-waypoints.in.script', 'app.in.script']),
         tasks: ['jshint:script', 'compile-script']
       },
       style: {
@@ -204,8 +220,9 @@ module.exports = function (grunt) {
 
   grunt.registerTask('compile-script', [
     'concat',
-    'uglify',
-    //'commonjs',
+    'closurecompiler',
+//    'uglify',
+    'commonjs',
     'usebanner:script'
   ]);
 
@@ -230,12 +247,13 @@ module.exports = function (grunt) {
 
   grunt.registerTask('default', [
     'cleanup',
-    'compile'
+    'compile',
+    'test'
   ]);
 
-  //grunt.registerTask('commonjs', 'Generate CommonJS entry module file', function () {
-  //  return r.get('cjs').write(grunt.config.get('concat.script.src'), c.getPath('app.to.script', { post: 'npm.js' }));
-  //});
+  grunt.registerTask('commonjs', 'Generate CommonJS entry module file', function () {
+    return r.generatorCommonJS().write(grunt.config.get('concat.script.src'), c.getPath('app.to.script', { post: 'npm.js' }));
+  });
 };
 
 /* EOF */

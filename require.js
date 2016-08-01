@@ -10,22 +10,66 @@
 
 'use strict';
 
-class GruntRequirements {
-  constructor(grunt) {
-    var fileSystem     = require('fs');
-    var filePath       = require('path');
+class RequiredDependencies {
 
-    this.objects     = [];
-    this.objects.out = new (require('./require-out.js'))(grunt, true);
-    this.objects.cfg = new (require('./require-cfg.js'))(this.objects.out, fileSystem);
-    this.objects.cjs = new (require('./require-cjs.js'))(this.objects.out, fileSystem, filePath);
+  /**
+   * @param {object} grunt
+   */
+  constructor (grunt) {
+    var filesystem = require('fs');
+    var path       = require('path');
+    var process    = require('child_process');
+    var os         = require('os');
+
+    this.objects = [];
+    this.objects.sio = new (require('./require-sio.js'))(grunt, true);
+    this.objects.cfg = new (require('./require-cfg.js'))(this.objects.sio, filesystem);
+    this.objects.gcj = new (require('./require-gcj.js'))(this.objects.sio, filesystem, path);
+    this.objects.osi = new (require('./require-osi.js'))(this.objects.sio, process, os);
   }
 
-  get(name) {
-    return this.objects[name];
+  /**
+   * @param {string} name
+   *
+   * @returns {*}
+   */
+  get (name) {
+    if (this.objects[index] !== undefined) {
+      return this.objects[index];
+    }
+
+    this.standardIO().fail('Invalid object type requested from dependencies handler (' + index + ').');
+  }
+
+  /**
+   * @returns {StandardIO}
+   */
+  standardIO () {
+    return this.objects.sio;
+  }
+
+  /**
+   * @returns {ConfigManagerYAML}
+   */
+  configsManagerYAML () {
+    return this.objects.cfg;
+  }
+
+  /**
+   * @returns {GeneratorCommonJS}
+   */
+  generatorCommonJS () {
+    return this.objects.gcj;
+  }
+
+  /**
+   * @returns {SystemIntrospector}
+   */
+  systemIntrospector () {
+    return this.objects.osi;
   }
 }
 
-module.exports = GruntRequirements;
+module.exports = RequiredDependencies;
 
 /* EOF */
