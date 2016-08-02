@@ -11,215 +11,252 @@
 'use strict';
 
 class ConfigManagerYAML {
-
   /**
+   * Construct our configuration object instance.
    * @param {StandardIO} out
    * @param {filesystem} filesystem
-   * @param {*}          tryPaths
+   * @param {Array}      paths
    */
-  constructor (out, filesystem, tryPaths) {
-    this.out        = out;
-    this.filesystem = filesystem;
-    this.isLoaded   = false;
-    this.tryPaths   = ['.grunt.json', '.grunt/config.json'];
+  constructor (out, filesystem, paths) {
+    this.out           = out;
+    this.filesystem    = filesystem;
+    this.loaded        = false;
+    this.loadPaths     = ['.grunt.json', '.grunt/config.json'];
+    this.configuration = {};
+    this.values        = {};
 
-    this.setUsrDirs(tryPaths);
-    this.readConfig();
+    var msg = 'Initializing Configuration Manager';
 
-    if (!this.isLoaded) {
-      this.out.fail('Could not load any configuration files!', undefined, true);
+    this.out.title(msg);
+    this.addPaths(paths);
+    this.loadConfig();
+
+    if (!this.loaded) {
+      this.out.fail('Failed to load configuration! ');
+      this.out.fail('Paths tried: "' + this.loadPaths.toString() + '" ', undefined, true);
     }
-
-    this.out.action('JSON configuration object initialized!');
   }
 
   /**
-   * @param {*} paths
-   *
-   * @return {*}
+   * Set alternative config file paths passed by the user.
+   * @param {Array} paths
    */
-  setUsrDirs (paths) {
-    if (paths === undefined || !(paths instanceof Array)) {
+  addPaths (paths) {
+    if (paths && paths instanceof Array) {
+      this.loadPaths = paths.concat(this.paths);
+    }
+  }
+
+  /**
+   * Read config file by trying
+   * @returns {bool}
+   */
+  loadConfig () {
+    this.loadPaths.forEach(function (p) {
+      this.readConfig(p);
+    }.bind(this));
+
+    return this.loaded === true;
+  }
+
+  /**
+   * Try to read config file. Skip load if one has already been loaded.
+   * @param {string} file
+   */
+  readConfig (file) {
+    if (this.loaded) {
       return;
     }
 
-    return this.tryPaths = paths.concat(this.tryPaths);
+    try {
+      this.configuration = JSON.parse(this.filesystem.readFileSync(file, { encoding: 'utf8' }));
+      this.loaded = true;
+      this.out.action('Loaded configuration file: ' + file);
+    }
+    catch (error) {}
   }
 
   /**
-   * Get config value for context path.
-   *
-   * @param {string}idx
-   * @param {*}     opt
-   *
+   * Get directory path from config.
+   * @param   {string} idx
+   * @param   {Array}  opt
    * @returns {*}
    */
   getPath (idx, opt) {
-    return this.getConfigIndex('paths', idx, opt);
+    return this.getValue('paths', idx, opt);
   }
 
   /**
-   * Get config value for context files.
-   *
-   * @param {string} idx
-   * @param {*}      opt
-   *
+   * Get file path from config.
+   * @param   {string} idx
+   * @param   {Array}  opt
    * @returns {*}
    */
   getFiles (idx, opt) {
-    return this.getConfigIndex('files', idx, opt);
+    return this.getValue('files', idx, opt);
   }
 
   /**
-   * @param {*} indexes
-   *
+   * Get collection of file paths from config.
+   * @param   {Array} idxs
    * @returns {Array}
-     */
-  getFilesMerged (indexes) {
-    return Array.prototype.concat(...indexes.map(this.getFiles.bind(this)));
+   */
+  getFilesMerged (idxs) {
+    return Array.prototype.concat(...idxs.map(this.getFiles.bind(this)));
   }
 
   /**
-   * Get config value for context task.
-   *
-   * @param {string}idx
-   * @param {*}     opt
-   *
+   * Get option value from config.
+   * @param   {string} idx
+   * @param   {Array}  opt
+   * @returns {*}
+   */
+  getOption (idx, opt) {
+    return this.getValue('options', idx, opt);
+  }
+
+  /**
+   * Get task value from config.
+   * @param   {string} idx
+   * @param   {Array}  opt
    * @returns {*}
    */
   getTask (idx, opt) {
-    return this.getConfigIndex('tasks', idx, opt);
+    return this.getValue('tasks', idx, opt);
   }
 
   /**
-   * Get config value for context template.
-   *
-   * @param {string}idx
-   * @param {*}     opt
-   *
+   * Get template value from config.
+   * @param   {string} idx
+   * @param   {Array}  opt
    * @returns {*}
    */
   getTemplate (idx, opt) {
-    return this.getConfigIndex('templates', idx, opt);
+    return this.getValue('templates', idx, opt);
   }
 
   /**
-   * Wrapper for getConfig() with IO logging.
-   *
-   * @param {string} context
+   * Get requested value from config.
+   * @param {string} ctx
    * @param {string} idx
-   * @param {*}      opt
-   *
+   * @param {Array}  opt
    * @returns {*}
    */
-  getConfigIndex (context, idx, opt) {
+  getValue (ctx, idx, opt) {
     var val;
-    var msg = 'Resolving config val for ' + idx;
 
-    try {
-      val = this.getConfig(context, idx, opt);
-    } catch (error) {
-      this.out.actionException(msg, error, true);
+    idx = ConfigManagerYAML.buildIndex(ctx, idx);
+
+    if (val = this.getCachedValue(idx, opt)) {
+      this.out.action('Value cached : ' + idx + ' (' + JSON.stringify(opt ? opt : 'no options') + ')');
+      return val;
     }
 
-    this.out.action(msg + ' as ' + val);
+    try {
+      val = this.lookup(idx);
+      val = ConfigManagerYAML.applyOptions(val, opt);
+    } catch (error) {
+      this.out.actionException('Value failed : ' + idx, error, true);
+    }
+
+    this.setCachedValue(idx, opt, val);
+    this.out.action('Value lookup : ' + idx + ' (' + JSON.stringify(opt) + ')');
+    this.out.action('--           = ' + val.toString());
+
     return val;
   }
 
   /**
-   * Return a config val based on the context, idx, and final-operations specified as arguments.
-   *
-   * @param {string} context
-   * @param {string} idx
-   * @param {*}      opt
-   *
+   * Return value from cache if already resolved.
+   * @param  {string} idx
+   * @param  {Array}  opt
+   * @return {string|Array|null}
+   */
+  getCachedValue (idx, opt) {
+    var key = ConfigManagerYAML.buildCacheIndex(idx, opt);
+
+    if (this.values[key]) {
+      return this.values[key];
+    }
+
+    return null;
+  }
+
+  /**
+   * Add value to cache for later retrieval.
+   * @param {string}       idx
+   * @param {Array}        opt
+   * @param {Array|string} val
+   */
+  setCachedValue (idx, opt, val) {
+    var key = ConfigManagerYAML.buildCacheIndex(idx, opt);
+
+    this.values[key] = val;
+  }
+
+  /**
+   * Lookup the config value by index.
+   * @param   {string} idx
    * @returns {*}
    */
-  getConfig (context, idx, opt) {
-    var val;
-
-    if (context) {
-      idx = context + '.' + idx;
-    }
-
-    try {
-      val = this.findIndex(idx);
-    } catch (e) {
-      throw e;
-    }
-
-    try {
-      val = val instanceof Array ? this.resolveArray(val) : this.resolveValue(val);
-    } catch (e) {
-      throw e;
-    }
-
-    return val instanceof Array ? ConfigManagerYAML.prePostArray(val, opt) : ConfigManagerYAML.prePostValue(val, opt);
+  lookup (idx) {
+    return this.resolveReplacements(this.resolveValue(idx));
   }
 
   /**
-   * Attempt to read in the first config file that exists out of those configured.
-   *
-   * @returns {bool}
+   * Find a value through a lookup against it's index.
+   * @param   {string} idx
+   * @returns {string|Array}
    */
-  readConfig () {
-    this.out.title('Loading Grunt Configuration');
+  resolveValue (idx) {
+    var val = this.configuration;
 
-    this.tryPaths.forEach(function (p) {
-      this.readConfigFile(p);
-    }.bind(this));
+    idx.split('.').forEach(function (i) {
+      val = val[i];
 
-    return this.isLoaded === true;
+      if (!val) {
+        throw new Error('Resolution error for index (' + idx + ') at fragment ' + i);
+      }
+    });
+
+    return val;
   }
 
   /**
-   * Attempt to read a config file. If file exists, load and toggle $isLoaded to stop further files from being read in.
-   *
-   * @param {string} file
+   * Resolve value placeholders.
+   * @param   {Array|string} val
+   * @returns {Array|string}
    */
-  readConfigFile (file) {
-    if (this.isLoaded) {
-      this.out.line('Skipping ' + file + ' (already resolved config)');
-      return;
+  resolveReplacements (val) {
+    if (val instanceof Array) {
+      return this.resolveReplacementsForArray(val);
     }
 
-    this.out.write('Trying to load config file "' + file + '"...');
-
-    try {
-      this.config = JSON.parse(this.filesystem.readFileSync(file, { encoding: 'utf8' }));
-      this.out.actionSuccess();
-      this.isLoaded = true;
-    } catch (error) {
-      this.out.fail('could not load file...', undefined, false);
-    }
+    return this.resolveReplacementsForScalar(val);
   }
 
   /**
-   * Resolve config val by performing recursive substitutions for all placeholders until the string is resolved.
-   *
-   * @param {string} val
-   *
+   * Resolve value placeholders in value string.
+   * @param   {string} val
    * @returns {string}
    */
-  resolveValue (val) {
-    var parsed = val.toString();
-    var search;
-    var replaceRegex;
-    var replaceValue;
+  resolveReplacementsForScalar (val) {
+    var search, replace;
     var i = 0;
+    var maxIterations = 20;
+    var parsed = val.toString();
 
     while (true) {
       search = new RegExp('\\$\{([a-z\.-]+)\}', 'i').exec(parsed);
 
-      if (!search || search.length < 2 || i++ > 10) {
+      if (!search || search.length < 2 || i++ > maxIterations) {
         break;
       }
 
-      replaceValue = this.getConfig(undefined, search[1], { silent: true });
-      replaceRegex = new RegExp(ConfigManagerYAML.regexQuote(search[0]), 'g');
+      replace = this.lookup(search[1]);
 
-      if (replaceValue) {
-        parsed = parsed.replace(replaceRegex, replaceValue);
+      if (replace) {
+        parsed = parsed.replace(new RegExp(ConfigManagerYAML.regexQuote(search[0]), 'g'), replace);
       }
     }
 
@@ -227,46 +264,66 @@ class ConfigManagerYAML {
   }
 
   /**
-   * If an array value needs to resolution this loops though and utilizes the normal scalar value resolver.
-   *
-   * @param {*} a
-   *
-   * @returns {*}
+   * Resolve value placeholders on each array element.
+   * @param   {Array} val
+   * @returns {Array}
    */
-  resolveArray (a) {
-    return a.map(function (val) {
-      return this.resolveValue(val);
+  resolveReplacementsForArray (val) {
+    return val.map(function (v) {
+      return this.resolveReplacementsForScalar(v);
     }.bind(this));
   }
 
   /**
-   * Find a value through a lookup against it's index.
-   *
-   * @param {string} search
-   *
-   * @returns {*}
+   * Resolve full index if context is specified.
+   * @param   {string|null} ctx
+   * @param   {string}      idx
+   * @returns {string}
    */
-  findIndex (search) {
-    var conf = this.config;
+  static buildIndex (ctx, idx) {
+    if (ctx) {
+      idx = ctx + '.' + idx;
+    }
 
-    search.split('.').forEach(function (p) {
-      if (!(conf = conf[p])) {
-        throw new Error('Error resolving value at index fragment: ' + index);
-      }
-    });
-
-    return conf;
+    return idx;
   }
 
   /**
-   * Generate and concatenate pre-value string to resolved string.
+   * Create a key for the given context, index, and options.
    *
-   * @param {string} val
-   * @param {*}      opt
-   *
+   * @returns {string}
+   */
+  static buildCacheIndex () {
+    var key = 'cache';
+
+    Array.from(arguments).forEach(function (k, i) {
+      key += '__' + i + '_' + JSON.stringify(k);
+    });
+
+    return key.replace(/\W/g, '');
+  }
+
+  /**
+   * Apply options to resolved config value.
+   * @param   {string|Array} val
+   * @param   {Array}        opt
    * @returns {*}
    */
-  static prePostValue (val, opt) {
+  static applyOptions (val, opt) {
+    if (val instanceof Array) {
+      return ConfigManagerYAML.applyOptionsOnArray(val, opt);
+    }
+
+    return ConfigManagerYAML.applyOptionsOnScalar(val, opt);
+  }
+
+  /**
+   * Generate final config value by applying passed options to resolved string.
+   * @param   {string} val
+   * @param   {Array}  opt
+   * @returns {*}
+   */
+  static applyOptionsOnScalar (val, opt) {
     if (opt && opt.pre) {
       val = opt.pre + val;
     }
@@ -279,24 +336,19 @@ class ConfigManagerYAML {
   }
 
   /**
-   * Generate and concatinate pre-value string to resolved string, but against an array of items.
-   *
-   * @param {string} arr
-   * @param {*}      opt
-   *
+   * Generate final config value by applying passed options to each array element.
+   * @param   {string} val
+   * @param   {Array}  opt
    * @returns {*}
    */
-  static prePostArray (arr, opt) {
-    return arr.map(function (val) {
-      return ConfigManagerYAML.prePostValue(val, opt);
+  static applyOptionsOnArray (val, opt) {
+    return val.map(function (v) {
+      return ConfigManagerYAML.applyOptionsOnScalar(v.toString(), opt);
     });
   }
 
   /**
-   * Regex quote sub routine.
-   *
-   * @param {string} val
-   *
+   * @param   {string} val
    * @returns {*}
    */
   static regexQuote (val) {

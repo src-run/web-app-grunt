@@ -1,95 +1,138 @@
 {
+  "options": {
+    "rc-file": {
+      "css-lint": "${paths.app.in.css}.csslintrc",
+      "css-comb": "${paths.app.in.css}.csscomb.json",
+      "js-hint" : "${paths.app.in.scr}.jshintrc",
+      "jscs"    : "${paths.app.in.scr}.jscsrc"
+    }
+  },
   "paths": {
-    "fragments": {
-      "script": "javascripts",
-      "style" : "stylesheets",
-      "in"    : "bundles/app",
-      "to"    : "assets/"
-    },
     "app": {
-      "root": "web/",
       "in": {
-        "script": "${paths.app.root}${paths.fragments.in}/${paths.fragments.script}/",
-        "style" : "${paths.app.root}${paths.fragments.in}/${paths.fragments.style}/"
+        "scr": "web/bundles/app/javascripts/",
+        "css": "web/bundles/app/stylesheets/"
       },
       "to": {
-        "script": "${paths.app.root}${paths.fragments.to}/${paths.fragments.script}/",
-        "style" : "${paths.app.root}${paths.fragments.to}/${paths.fragments.style}/"
-      }
+        "scr": "web/assets/scr/",
+        "css": "web/assets/css/",
+        "img": "web/assets/img/"
+      },
+      "extra": [
+        "web/assets/cache"
+      ]
     },
     "jquery": {
       "root": "web/components/jquery/dist/",
       "in": {
-        "script": "${paths.jquery.root}"
+        "scr": "${paths.jquery.root}"
       },
       "to": {
-        "script": "${paths.app.to.script}jquery.js"
+        "scr": "${paths.app.to.scr}jquery.js"
       }
+    },
+    "plug": {
+      "root": "web/components/"
     },
     "plug-bs": {
       "root": "web/components/bootstrap-sass/assets/",
       "in": {
-        "script": "${paths.plug-bs.root}javascripts/",
-        "style" : "${paths.plug-bs.root}stylesheets/"
+        "scr": "${paths.plug-bs.root}javascripts/",
+        "css": "${paths.plug-bs.root}stylesheets/"
       },
       "to": {
-        "style": "${paths.app.to.style}bootstrap.css"
+        "css": "${paths.app.to.css}bootstrap.css"
+      }
+    },
+    "plug-fa": {
+      "root": "web/components/font-awesome/",
+      "in": {
+        "css": "${paths.plug-fa.root}scss/"
       }
     },
     "plug-waypoints": {
       "root": "web/components/jquery-waypoints/lib/",
       "in"  : {
-        "script" : "${paths.plug-waypoints.root}"
+        "scr": "${paths.plug-waypoints.root}"
+      }
+    },
+    "plug-jslghtbx": {
+      "root": "web/components/jsonlylightbox/",
+      "in"  : {
+        "scr": "${paths.plug-jslghtbx.root}js/",
+        "css": "${paths.plug-jslghtbx.root}css/",
+        "img": "${paths.plug-jslghtbx.root}img/"
       }
     },
     "plug-all": {
       "to": {
-        "script": "${paths.app.to.script}plugins.js"
+        "scr": "${paths.app.to.scr}plugins.js"
       }
     }
   },
   "files": {
+    "app" : {
+      "in": {
+        "scr": [
+          "${paths.app.in.scr}app.js"
+        ],
+        "scss": [
+          "${paths.app.in.css}app.scss"
+        ]
+      },
+      "to": {
+        "css"    : "${paths.app.to.css}app.css",
+        "css-min": "${paths.app.to.css}app.min.css",
+        "css-map": "${paths.app.to.css}app.css.map",
+        "scr"    : "${paths.app.to.scr}app.js",
+        "scr-min": "${paths.app.to.scr}app.min.js"
+      }
+    },
+    "grunt": [
+      "Gruntfile.js",
+      "package.js",
+      "grunt/*.js"
+    ],
     "jquery": {
       "in": {
-        "script": [
-          "${paths.jquery.in.script}jquery.js"
+        "scr": [
+          "${paths.jquery.in.scr}jquery.js"
         ]
       }
     },
     "plug-bs": {
       "in": {
-        "script": [
-          "${paths.plug-bs.in.script}bootstrap/transition.js",
-          "${paths.plug-bs.in.script}bootstrap/alert.js",
-          "${paths.plug-bs.in.script}bootstrap/button.js",
-          "${paths.plug-bs.in.script}bootstrap/carousel.js",
-          "${paths.plug-bs.in.script}bootstrap/collapse.js",
-          "${paths.plug-bs.in.script}bootstrap/dropdown.js",
-          "${paths.plug-bs.in.script}bootstrap/modal.js",
-          "${paths.plug-bs.in.script}bootstrap/tooltip.js",
-          "${paths.plug-bs.in.script}bootstrap/popover.js",
-          "${paths.plug-bs.in.script}bootstrap/scrollspy.js",
-          "${paths.plug-bs.in.script}bootstrap/tab.js",
-          "${paths.plug-bs.in.script}bootstrap/affix.js"
+        "scr": [
+          "${paths.plug-bs.in.scr}bootstrap/transition.js",
+          "${paths.plug-bs.in.scr}bootstrap/alert.js",
+          "${paths.plug-bs.in.scr}bootstrap/button.js",
+          "${paths.plug-bs.in.scr}bootstrap/carousel.js",
+          "${paths.plug-bs.in.scr}bootstrap/collapse.js",
+          "${paths.plug-bs.in.scr}bootstrap/dropdown.js",
+          "${paths.plug-bs.in.scr}bootstrap/modal.js",
+          "${paths.plug-bs.in.scr}bootstrap/tooltip.js",
+          "${paths.plug-bs.in.scr}bootstrap/popover.js",
+          "${paths.plug-bs.in.scr}bootstrap/scrollspy.js",
+          "${paths.plug-bs.in.scr}bootstrap/tab.js",
+          "${paths.plug-bs.in.scr}bootstrap/affix.js"
         ]
       }
     },
     "plug-waypoints" : {
-      "in":   {
-        "script": "${paths.plug-waypoints.in.script}jquery.waypoints.js"
+      "in": {
+        "scr": "${paths.plug-waypoints.in.scr}jquery.waypoints.js"
       }
     },
-    "app" : {
+    "plug-jslghtbx" : {
       "in": {
-        "script": [
-          "${paths.app.in.script}app.js"
-        ]
+        "scr": "${paths.plug-jslghtbx.in.scr}lightbox.js",
+        "css": "${paths.plug-jslghtbx.in.css}lightbox.scss"
       }
     }
   },
   "tasks": {
-    "autoprefixer": {
-      "browserList": ["Android >= 4", "Chrome >= 28", "Firefox >= 40", "Explorer >= 11", "iOS >= 7", "Opera >= 30", "Safari >= 9"
+    "auto-prefix": {
+      "browser-list": ["Android >= 4", "Chrome >= 28", "Firefox >= 40", "Explorer >= 11", "iOS >= 7", "Opera >= 30", "Safari >= 9"
       ]
     }
   },

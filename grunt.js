@@ -25,8 +25,10 @@ module.exports = function (grunt) {
     banner: c.getTemplate('banner'),
 
     clean: {
-      script: [c.getPath('app.to.script')],
-      style : [c.getPath('app.to.style')]
+      scr: c.getPath('app.to.scr'),
+      css: c.getPath('app.to.css'),
+      img: c.getPath('app.to.img'),
+      extra: c.getPath('app.extra')
     },
 
     jshint: {
@@ -34,28 +36,21 @@ module.exports = function (grunt) {
         globals: {
           jQuery: true
         },
-        jshintrc: c.getPath('app.in.script', { post: '.jshintrc' })
+        jshintrc: c.getOption('rc-file.js-hint')
       },
-      grunt: {
-        options: {
-          jshintrc: c.getPath('app.in.script', { post: '.jshintrc' })
-        },
-        src: ['Gruntfile.js', 'package.js', 'grunt/*.js']
-      },
-      script: {
-        src: c.getFilesMerged(['app.in.script'])
-      }
+      grunt: { src: c.getFilesMerged(['grunt']) },
+      scr  : { src: c.getFilesMerged(['app.in.scr']) }
     },
 
     jscs: {
       options: {
-        config: c.getPath('app.in.script', { post: '.jscsrc' })
+        config: c.getOption('rc-file.jscs')
       },
       grunt: {
         src: '<%= jshint.grunt.src %>'
       },
-      script: {
-        src: '<%= jshint.script.src %>'
+      scr: {
+        src: '<%= jshint.scr.src %>'
       }
     },
 
@@ -63,8 +58,8 @@ module.exports = function (grunt) {
       options: {
         type: 'text'
       },
-      style: {
-        src : [c.getPath('app.to.style', { post: '*.css' })],
+      css: {
+        src : c.getFiles('app.to.css'),
         dest: './',
         cwd : './'
       }
@@ -76,14 +71,14 @@ module.exports = function (grunt) {
         banner   : '<%= banner %>',
         linebreak: true
       },
-      script: {
+      scr: {
         files: {
-          src: [c.getPath('app.to.script', { post: '*.js' })]
+          src: c.getPath('app.to.scr', { post: '*.js' })
         }
       },
-      style: {
+      css: {
         files: {
-          src: [c.getPath('app.to.style', { post: '*.css' })]
+          src: c.getPath('app.to.css', { post: '*.css' })
         }
       }
     },
@@ -92,72 +87,73 @@ module.exports = function (grunt) {
       options: {
         separator: ';'
       },
-      script: {
-        src : c.getFilesMerged(['jquery.in.script', 'plug-bs.in.script', 'plug-bs.in.script', 'plug-waypoints.in.script', 'app.in.script']),
-        dest: c.getPath('app.to.script', { post: 'app.js' })
-      }
-    },
-
-    uglify: {
-      options: {
-        mangle          : true,
-        preserveComments: false,
-        screwIE8        : true,
-        quoteStyle      : 2
-      },
-      script: {
-        src : '<%= concat.script.dest %>',
-        dest: c.getPath('app.to.script', { post: 'app.min.js' })
+      scr: {
+        src : c.getFilesMerged(['jquery.in.scr', 'plug-bs.in.scr', 'plug-bs.in.scr', 'plug-waypoints.in.scr', 'plug-jslghtbx.in.scr', 'app.in.scr']),
+        dest: c.getFiles('app.to.scr')
       }
     },
 
     closurecompiler: {
-      script: {
-        options: { // jscs:disable
+      scr: {
+        // jscs:disable
+        options: {
           closure_compilation_level: 'ADVANCED',
           closure_language_in      : 'ECMASCRIPT6_STRICT',
           closure_language_out     : 'ECMASCRIPT5_STRICT'
-        }, // jscs:enable
-        dest: c.getPath('app.to.script', { post: 'app.min.js' }),
-        src : ['<%= concat.script.dest %>']
+        },
+        // jscs:enable
+        src : '<%= concat.scr.dest %>',
+        dest: c.getFiles('app.to.scr-min')
       }
     },
 
     sass: {
       options: {
-        includePaths: [c.getPath('app.in.style'), c.getPath('plug.root')],
+        includePaths: [c.getPath('app.in.css'), c.getPath('plug.root')],
         precision   : 9,
         sourceMap   : true,
-        outFile     : c.getPath('app.to.style', { post: 'app.css.map' })
+        outFile     : c.getFiles('app.to.css-map')
       },
-      style: {
-        src : c.getPath('app.in.style', { post: 'app.scss' }),
-        dest: c.getPath('app.to.style', { post: 'app.css' })
+      css: {
+        src : c.getFiles('app.in.scss'),
+        dest: c.getFiles('app.to.css')
+      }
+    },
+
+    copy: {
+      plug: {
+        files: [
+          {
+            expand: true,
+            flatten: true,
+            src   : c.getPath('plug-jslghtbx.in.img', { post: '*' }),
+            dest  : c.getPath('app.to.img'),
+            filter: 'isFile'
+          }
+        ]
       }
     },
 
     autoprefixer: {
       options: {
-        browsers: c.getTask('autoprefixer.browserList')
+        browsers: c.getTask('auto-prefix.browser-list'),
+        map     : true
       },
-      style: {
-        options: {
-          map: true
-        },
-        src: c.getPath('app.to.style', { post: 'app.css' })
+      css: {
+        src: '<%= sass.css.dest %>'
       }
     },
 
     lesslint: {
       options: {
         csslint: {
-          csslintrc        : c.getPath('app.in.style', { post: '.csslintrc' }),
-          failOnWarning    : false,
-          'fallback-colors': false
+          'fallback-colors': false,
+          failOnWarning    : true,
+          csslintrc        : c.getOption('rc-file.css-lint')
         }
       },
-      style: {
-        src: c.getPath('app.to.style', { post: 'app.css' })
+      css: {
+        src: '<%= sass.css.dest %>'
       }
     },
 
@@ -168,32 +164,32 @@ module.exports = function (grunt) {
         sourceMap          : true,
         advanced           : false
       },
-      style: {
-        src : c.getPath('app.to.style', { post: 'app.css' }),
-        dest: c.getPath('app.to.style', { post: 'app.min.css' })
+      css: {
+        src : '<%= sass.css.dest %>',
+        dest: c.getFiles('app.to.css-min')
       }
     },
 
     csscomb: {
       options: {
-        config: c.getPath('app.in.style', { post: '.csscomb.json' })
+        config: c.getOption('rc-file.css-comb')
       },
-      style: {
+      css: {
         expand: true,
         src   : ['*.css', '!*.min.css'],
-        cwd   : c.getPath('app.to.style'),
-        dest  : c.getPath('app.to.style')
+        cwd   : c.getPath('app.to.css'),
+        dest  : c.getPath('app.to.css')
       }
     },
 
     watch: {
-      script: {
-        files: c.getFilesMerged(['jquery.in.script', 'plug-bs.in.script', 'plug-bs.in.script', 'plug-waypoints.in.script', 'app.in.script']),
-        tasks: ['jshint:script', 'compile-script']
+      scr: {
+        files: c.getPath('app.in.scr', { post: '**/*.js' }),
+        tasks: ['test-scr', 'compile-scr']
       },
-      style: {
-        files: c.getPath('app.in.style', { post: '**/*.scss' }),
-        tasks: ['test-style']
+      css: {
+        files: c.getPath('app.in.css', { post: '**/*.scss' }),
+        tasks: ['compile-css', 'test-css']
       }
     }
   });
@@ -202,57 +198,60 @@ module.exports = function (grunt) {
   require('time-grunt')(grunt);
 
   grunt.registerTask('test', [
-    'test-style',
-    'test-script'
+    'test-css',
+    'test-scr'
   ]);
 
-  grunt.registerTask('test-style', [
-    'compile-style',
+  grunt.registerTask('test-css', [
     'lesslint'
   ]);
 
-  grunt.registerTask('test-script', [
-    'jshint:script',
-    'jscs:script',
+  grunt.registerTask('test-scr', [
+    'jshint:scr',
+    'jscs:scr',
     'jshint:grunt',
     'jscs:grunt'
   ]);
 
-  grunt.registerTask('compile-script', [
+  grunt.registerTask('compile-scr', [
     'concat',
     'closurecompiler',
-//    'uglify',
     'commonjs',
-    'usebanner:script'
+    'usebanner:scr'
   ]);
 
-  grunt.registerTask('compile-style', [
+  grunt.registerTask('compile-css', [
     'sass',
     'autoprefixer',
     'csscomb',
     'cssmin',
-    'decomment:style',
-    'usebanner:style'
+    'decomment:css',
+    'usebanner:css'
+  ]);
+
+  grunt.registerTask('install-img', [
+    'copy'
   ]);
 
   grunt.registerTask('compile', [
-    'compile-style',
-    'compile-script'
+    'compile-css',
+    'compile-scr'
   ]);
 
   grunt.registerTask('cleanup', [
-    'clean:script',
-    'clean:style'
+    'clean:img',
+    'clean:scr',
+    'clean:css'
   ]);
 
   grunt.registerTask('default', [
     'cleanup',
-    'compile',
-    'test'
+    'install-img',
+    'compile'
   ]);
 
   grunt.registerTask('commonjs', 'Generate CommonJS entry module file', function () {
-    return r.generatorCommonJS().write(grunt.config.get('concat.script.src'), c.getPath('app.to.script', { post: 'npm.js' }));
+    return r.generatorCommonJS().write(grunt.config.get('concat.scr.src'), c.getPath('app.to.scr', { post: 'npm.js' }));
   });
 };
 
