@@ -89,7 +89,7 @@ module.exports = function (grunt) {
         separator: ';'
       },
       scr: {
-        src : c.getFilesMerged(['jquery.in.scr', 'plug-bs.in.scr', 'plug-bs.in.scr', 'plug-waypoints.in.scr', 'plug-jslghtbx.in.scr', 'app.in.scr']),
+        src : c.getFilesMerged(['jquery.in.scr', 'plug-bs.in.scr', 'plug-bs.in.scr', 'plug-waypoints.in.scr', 'plug-jslghtbx.in.scr', 'plug-smooth-scroll.in.scr', 'app.in.scr']),
         dest: c.getFiles('app.to.scr')
       }
     },
