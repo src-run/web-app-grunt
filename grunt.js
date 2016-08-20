@@ -28,7 +28,8 @@ module.exports = function (grunt) {
       scr: c.getPath('app.to.scr'),
       css: c.getPath('app.to.css'),
       img: c.getPath('app.to.img'),
-      extra: c.getPath('app.extra')
+      fnt: c.getPath('app.to.img'),
+      ext: c.getPath('app.extra'),
     },
 
     jshint: {
@@ -121,14 +122,36 @@ module.exports = function (grunt) {
     },
 
     copy: {
-      plug: {
+      'img-jslghtbx': {
         files: [
           {
-            expand: true,
-            flatten: true,
-            src   : c.getPath('plug-jslghtbx.in.img', { post: '*' }),
-            dest  : c.getPath('app.to.img'),
-            filter: 'isFile'
+            expand  : true,
+            flatten : true,
+            src     : c.getPath('plug-jslghtbx.in.img', { post: '*' }),
+            dest    : c.getPath('app.to.img'),
+            filter  : 'isFile'
+          }
+        ]
+      },
+      'fnt-ionicons': {
+        files: [
+          {
+            expand  : true,
+            flatten : true,
+            src     : c.getPath('plug-ionicons.in.fnt', { post: '*' }),
+            dest    : c.getPath('plug-ionicons.to.fnt'),
+            filter  : 'isFile'
+          }
+        ]
+      },
+      'fnt-fontawesome': {
+        files: [
+          {
+            expand  : true,
+            flatten : true,
+            src     : c.getPath('plug-fa.in.fnt', { post: '*' }),
+            dest    : c.getPath('plug-fa.to.fnt'),
+            filter  : 'isFile'
           }
         ]
       }
@@ -229,11 +252,17 @@ module.exports = function (grunt) {
     'usebanner:css'
   ]);
 
+  grunt.registerTask('assets-copy', [
+    'copy:fnt-ionicons',
+    'copy:fnt-fontawesome'
+  ]);
+
   grunt.registerTask('install-img', [
-    'copy'
+    'copy:img-jslghtbx'
   ]);
 
   grunt.registerTask('compile', [
+    'assets-copy',
     'compile-css',
     'compile-scr'
   ]);
@@ -241,7 +270,8 @@ module.exports = function (grunt) {
   grunt.registerTask('cleanup', [
     'clean:img',
     'clean:scr',
-    'clean:css'
+    'clean:css',
+    'clean:fnt'
   ]);
 
   grunt.registerTask('default', [
