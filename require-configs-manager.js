@@ -87,6 +87,15 @@ class ConfigManagerYAML {
   }
 
   /**
+   * Get collection of file paths from config.
+   * @param   {Array} idxs
+   * @returns {Array}
+   */
+  getPathsMerged (idxs) {
+    return Array.prototype.concat(...idxs.map(this.getPath.bind(this)));
+  }
+
+  /**
    * Get file path from config.
    * @param   {string} idx
    * @param   {Array}  opt
@@ -146,8 +155,9 @@ class ConfigManagerYAML {
     var val;
 
     idx = ConfigManagerYAML.buildIndex(ctx, idx);
+    val = this.getCachedValue(idx, opt);
 
-    if (val = this.getCachedValue(idx, opt)) {
+    if (val) {
       this.out.action('Value cached : ' + idx + ' (' + JSON.stringify(opt ? opt : 'no options') + ')');
       return val;
     }
@@ -161,7 +171,13 @@ class ConfigManagerYAML {
 
     this.setCachedValue(idx, opt, val);
     this.out.action('Value lookup : ' + idx + ' (' + JSON.stringify(opt) + ')');
-    this.out.action('--           = ' + val.toString());
+
+    if (val instanceof Object) {
+      this.out.action('--           = {object}:');
+      this.out.writeObject(val);
+    } else {
+      this.out.action('--           = ' + val.toString());
+    }
 
     return val;
   }
@@ -228,6 +244,10 @@ class ConfigManagerYAML {
    * @returns {Array|string}
    */
   resolveReplacements (val) {
+    if (val instanceof Object) {
+      return this.resolveReplacementsForObject(val);
+    }
+
     if (val instanceof Array) {
       return this.resolveReplacementsForArray(val);
     }
@@ -241,7 +261,8 @@ class ConfigManagerYAML {
    * @returns {string}
    */
   resolveReplacementsForScalar (val) {
-    var search, replace;
+    var search;
+    var replace;
     var i = 0;
     var maxIterations = 20;
     var parsed = val.toString();
@@ -272,6 +293,27 @@ class ConfigManagerYAML {
     return val.map(function (v) {
       return this.resolveReplacementsForScalar(v);
     }.bind(this));
+  }
+
+  /**
+   * Resolve value placeholders on each object element.
+   * @param   {Object} val
+   * @returns {Object}
+   */
+  resolveReplacementsForObject (val) {
+    Array.prototype.concat(Object.getOwnPropertyNames(val)).forEach(function (property) {
+      var v = val[property];
+
+      if (v instanceof Object) {
+        val[property] = this.resolveReplacementsForObject(v);
+      } else if (v instanceof Array) {
+        val[property] = this.resolveReplacementsForArray(v);
+      } else if (typeof v === 'string') {
+        val[property] = this.resolveReplacementsForScalar(v);
+      }
+    }.bind(this));
+
+    return val;
   }
 
   /**

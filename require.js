@@ -22,10 +22,11 @@ class RequiredDependencies {
     var os         = require('os');
 
     this.objects = [];
-    this.objects.sio = new (require('./require-sio.js'))(grunt, true);
-    this.objects.cfg = new (require('./require-cfg.js'))(this.objects.sio, filesystem);
-    this.objects.gcj = new (require('./require-gcj.js'))(this.objects.sio, filesystem, path);
-    this.objects.osi = new (require('./require-osi.js'))(this.objects.sio, process, os);
+    this.objects.sio = new (require('./require-standard-io.js'))(grunt, true);
+    this.objects.cfg = new (require('./require-configs-manager.js'))(this.objects.sio, filesystem);
+    this.objects.gcj = new (require('./require-generator-commonjs.js'))(this.objects.sio, filesystem, path);
+    this.objects.osi = new (require('./require-system-introspect.js'))(this.objects.sio, process, os);
+    this.objects.gen = new (require('./require-configs-generator.js'))(grunt, this.objects.sio, this.objects.cfg, this.objects.osi, this.objects.gcj);
   }
 
   /**
@@ -34,11 +35,11 @@ class RequiredDependencies {
    * @returns {*}
    */
   get (name) {
-    if (this.objects[index] !== undefined) {
-      return this.objects[index];
+    if (this.objects[name] !== undefined) {
+      return this.objects[name];
     }
 
-    this.standardIO().fail('Invalid object type requested from dependencies handler (' + index + ').');
+    this.standardIO().fail('Invalid object type requested from dependencies handler (' + name + ').');
   }
 
   /**
@@ -51,8 +52,15 @@ class RequiredDependencies {
   /**
    * @returns {ConfigManagerYAML}
    */
-  configsManagerYAML () {
+  configDataYaml () {
     return this.objects.cfg;
+  }
+
+  /**
+   * @returns {ConfigGenerator}
+   */
+  configGenerator () {
+    return this.objects.gen;
   }
 
   /**

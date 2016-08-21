@@ -33,6 +33,34 @@ class StandardIO {
   }
 
   /**
+   * @param {Object}  obj
+   * @param {integer} i
+   */
+  writeObject (obj, i) {
+    var depth = i ? i : 0;
+    var type = typeof obj;
+
+    if (type === 'string') {
+      this.line('~~~ {' + type + '} ' + obj);
+      return;
+    }
+
+    var props = Array.prototype.concat(Object.getOwnPropertyNames(obj));
+
+    props.forEach(function (p) {
+      var v = obj[p];
+      var t = typeof v;
+
+      if (t === 'object') {
+        this.line('!!... ' + '  '.repeat(depth) + ' {' + type + '} [' + p + '] = ');
+        this.writeObject(v, depth + 1);
+      } else {
+        this.line('!!... ' + '  '.repeat(depth) + ' {' + type + '} [' + p + '] = ' + v);
+      }
+    }.bind(this));
+  }
+
+  /**
    * @param {string} message
    */
   write (message) {
