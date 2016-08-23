@@ -103,7 +103,7 @@ class ConfigGenerator {
         },
         scr : {
           // jscs:disable
-          options : { closure_compilation_level : 'ADVANCED' },
+          options : { closure_compilation_level : 'SIMPLE' },
           // jscs:enable
           src  : c.getFiles('to.scr'),
           dest : c.getFiles('to.scr-min')
