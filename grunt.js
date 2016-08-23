@@ -42,9 +42,9 @@ module.exports = function (grunt) {
 
   grunt.registerTask('compile-scr', [
     'concat:scr',
-    'concat:scr-plugins',
+    'concat:scrPlugins',
     'closurecompiler:scr',
-    'closurecompiler:scr-plugins',
+    'closurecompiler:scrPlugins',
     'commonjs',
     'usebanner:scr'
   ]);

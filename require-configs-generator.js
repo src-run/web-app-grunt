@@ -78,14 +78,14 @@ class ConfigGenerator {
       },
 
       concat : {
-        options       : { separator : ';' },
-        "scr-plugins" : {
-          src     : c.getFilesMerged(['plugins.in.scr']),
-          dest    : c.getFiles('to.scr-plugins')
+        options    : { separator : ';' },
+        scrPlugins : {
+          src  : c.getFilesMerged(['plugins.in.scr']),
+          dest : c.getFiles('to.scr-plugins')
         },
         scr : {
-          src     : c.getFilesMerged(['plugins.in.scr', 'in.scr']),
-          dest    : c.getFiles('to.scr')
+          src  : c.getFilesMerged(['plugins.in.scr', 'in.scr']),
+          dest : c.getFiles('to.scr')
         },
         sty : {}
       },
@@ -94,7 +94,7 @@ class ConfigGenerator {
         // jscs:disable
         options : { closure_language_in : c.getOption('closure-compiler.lang.in'), closure_language_out : c.getOption('closure-compiler.lang.to') },
         // jscs:enable
-        "scr-plugins" : {
+        scrPlugins : {
           // jscs:disable
           options : { closure_compilation_level : 'SIMPLE' },
           // jscs:enable
@@ -156,11 +156,11 @@ class ConfigGenerator {
       watch : {
         scr : {
           files : c.getPath('in.scr', { post: '**/*.js' }),
-          tasks : ['concat:scr', 'concat:scr-plugins', 'usebanner:scr']
+          tasks : ['concat:scr', 'concat:scrPugins', 'usebanner:scr']
         },
         css : {
           files : c.getPath('in.sty', { post: '**/*.scss' }),
-          tasks : ['copy', 'compile-sty']
+          tasks : ['copy', 'sass', 'autoprefixer', 'csscomb', 'cssmin']
         }
       }
     };
