@@ -78,16 +78,20 @@ class ConfigGenerator {
       },
 
       concat : {
-        options    : { separator : ';' },
         scrPlugins : {
-          src  : c.getFilesMerged(['plugins.in.scr']),
-          dest : c.getFiles('to.scr-plugins')
+          options : { separator : ';' },
+          src     : c.getFilesMerged(['plugins.in.scr']),
+          dest    : c.getFiles('to.scr-plugins')
         },
         scr : {
-          src  : c.getFilesMerged(['plugins.in.scr', 'in.scr']),
-          dest : c.getFiles('to.scr')
+          options : { separator : ';' },
+          src     : c.getFilesMerged(['plugins.in.scr', 'in.scr']),
+          dest    : c.getFiles('to.scr')
         },
-        sty : {}
+        sty : {
+          src  : c.getFilesMerged(['to.sty', 'plugins.in.sty']),
+          dest : c.getFiles('to.sty')
+        }
       },
 
       closurecompiler : {

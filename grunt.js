@@ -51,6 +51,7 @@ module.exports = function (grunt) {
 
   grunt.registerTask('compile-sty', [
     'sass',
+    'concat:sty',
     'autoprefixer',
     'csscomb',
     'cssmin',
@@ -73,8 +74,7 @@ module.exports = function (grunt) {
 
   grunt.registerTask('default', [
     'cleanup',
-    'compile',
-    'test'
+    'compile'
   ]);
 
   grunt.registerTask('commonjs', 'Generate CommonJS entry module file', function () {
